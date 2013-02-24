@@ -1,7 +1,7 @@
 #!/bin/bash
-
-#set -u
-#set -x
+#
+# Run Sysbench tests against a MySQL database
+# Expect Sysbench version 0.5
 
 #sysbench arguments
 #http://www.percona.com/docs/wiki/benchmark:sysbench:olpt.lua
@@ -19,8 +19,13 @@ SYSBENCH_TESTS_DEFAULT_ARGS=" _SYSBENCH_ \
     --mysql-engine-trx=yes \
     --num-threads=_NUMTHREAD_ "
 
-SYSBENCH_TESTS="delete.luai insert.lua oltp.lua select.lua select_random_points.lua select_random_ranges.lua update_index.lua update_non_index.lua"
+SYSBENCH_TESTS="delete.lua insert.lua oltp.lua select.lua select_random_points.lua select_random_ranges.lua update_index.lua update_non_index.lua"
 
+
+################################################################################
+#
+# No need to touch anything below here
+#
 
 usage()
 {
@@ -32,6 +37,8 @@ $SYSBENCH_TESTS
 
 OPTIONS:
    -h      Show this message
+   -b      SysBench Binary (w/ full path)
+   -l      SysBench Library (sysbench/tests/db)
    -s      Database Host
    -d      Database Name
    -u      User in Database
@@ -52,18 +59,22 @@ TABLESIZE=2000000
 NUMTABLES=8
 TESTNAME=
 VERBOSE=0
-
-# Path to sysbench
-SYSBENCH=../sysbench/sysbench/sysbench
-SYSBENCH_DB_TESTS=../sysbench/sysbench/tests/db/
+SYSBENCH=
+SYSBENCH_DB_TESTS=
 OUTDIR=
 
-while getopts “hs:d:u:p:i:n:t:o:v” OPTION
+while getopts “hs:d:u:p:i:n:t:o:b:l:v” OPTION
 do
      case $OPTION in
          h)
              usage
              exit 1
+             ;;
+         b)
+             SYSBENCH=$OPTARG
+             ;;
+         l)
+             SYSBENCH_DB_TESTS=$OPTARG
              ;;
          s)
              DBHOST=$OPTARG
@@ -99,11 +110,33 @@ do
      esac
 done
 
-if [[ -z $DBHOST ]] || [[ -z $TESTNAME ]] || [[ -z $OUTDIR ]]
+if [[ -z $DBHOST ]] || [[ -z $TESTNAME ]] || [[ -z $OUTDIR ]] || [[ -z $SYSBENCH ]] || [[ -z $SYSBENCH_DB_TESTS ]]
 then
      usage
      exit 1
 fi
+
+# Verify inputs are valid
+if [[ ! -x $SYSBENCH ]]
+then
+    echo "Sysbench binary not found at $SYSBENCH"
+    exit 1
+fi
+
+if [[ ! -d $SYSBENCH_DB_TESTS ]]
+then
+    echo "SysBench DB Test directory not accessible: $SYSBENCH_DB_TESTS"
+    exit 1
+fi
+
+for SBTEST in $SYSBENCH_TESTS; do
+  if [[ ! -f "$SYSBENCH_DB_TESTS/$SBTEST" ]]
+  then
+    echo "Sysbench test $SBTEST not found in $SYSBENCH_DB_TESTS."
+    echo "Please verify SysBench library location"
+    exit 1
+  fi
+done
 
 
 # No spaces in name
