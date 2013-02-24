@@ -58,7 +58,7 @@ SYSBENCH=../sysbench/sysbench/sysbench
 SYSBENCH_DB_TESTS=../sysbench/sysbench/tests/db/
 OUTDIR=
 
-while getopts “hs:d:u:p:i:n:t:v” OPTION
+while getopts “hs:d:u:p:i:n:t:o:v” OPTION
 do
      case $OPTION in
          h)
