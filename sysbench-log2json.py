@@ -15,7 +15,7 @@
 
 """Parse sysbench's output and transform it into JSON."""
 
-import json
+import simplejson as json
 import os
 import re
 import sys
@@ -182,15 +182,19 @@ def main(args):
       return 2
     if config not in config2results:
       config2results[config] = {}
-    with open(arg) as f:
+    f = open(arg)
+    try:
       process(f, config2results[config])
+    finally:
+      f.close()
 
   for config, results in config2results.iteritems():
     for test_mode, data in results.iteritems():
       data["averages"] = dict((metric, [[num_threads, sum(vs) / len(vs)]
                                         for num_threads, vs in sorted(values.iteritems())])
                               for metric, values in data["results"].iteritems())
-  with open("results.js", "w") as f:
+  f = open("results.js", "w")
+  try:
     f.write("TESTS = ");
     json.dump(TESTS, f, indent=2)
     f.write(";\nMETRICS = {\n");
@@ -199,6 +203,8 @@ def main(args):
     f.write("\n};\nresults = ");
     json.dump(config2results, f, indent=2)
     f.write(";")
+  finally:
+    f.close()
 
 
 if __name__ == "__main__":
